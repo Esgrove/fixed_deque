@@ -316,7 +316,7 @@ impl<'a, T> IntoIterator for &'a mut Deque<T> {
     }
 }
 
-// Implement0 FromIterator to create Deque from an iterator
+// Implement FromIterator to create Deque from an iterator
 impl<T> FromIterator<T> for Deque<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let deque: VecDeque<T> = iter.into_iter().collect();
