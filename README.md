@@ -28,7 +28,7 @@ assert_eq!(deque.len(), 5);
 
 ## Features
 
-Optional `serde` features that adds support for (de)serializing the Deque.
+Optional `serde` feature that adds support for (de)serializing the Deque.
 
 ```shell
 cargo add fixed_deque --features serde
@@ -36,7 +36,7 @@ cargo add fixed_deque --features serde
 
 ## Contribution
 
-Contributions welcome.
+Contributions are very welcome.
 If you feel something could be added or improved,
 please do open a PR.
 
