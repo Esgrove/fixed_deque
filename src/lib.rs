@@ -1,3 +1,6 @@
+#![doc = include_str!("../README.md")]
+#![deny(missing_docs)]
+
 use std::collections::VecDeque;
 use std::ops::{Index, IndexMut};
 
