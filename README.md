@@ -1,5 +1,8 @@
 # Deque
 
+![Crates.io Version](https://img.shields.io/crates/v/fixed_deque)
+[![Documentation](https://docs.rs/fixed_deque/badge.svg)](https://docs.rs/fixed_deque/)
+
 A fixed size `VecDeque` for Rust to match
 the [Python Deque](https://docs.python.org/3/library/collections.html#collections.deque).
 
