@@ -270,6 +270,18 @@ impl<T: PartialEq> PartialEq for Deque<T> {
     }
 }
 
+impl<T: PartialEq> PartialEq<VecDeque<T>> for Deque<T> {
+    fn eq(&self, other: &VecDeque<T>) -> bool {
+        &self.deque == other
+    }
+}
+
+impl<T: PartialEq> PartialEq<Deque<T>> for VecDeque<T> {
+    fn eq(&self, other: &Deque<T>) -> bool {
+        self == &other.deque
+    }
+}
+
 impl<T: Eq> Eq for Deque<T> {}
 
 impl<T> Index<usize> for Deque<T> {
@@ -344,5 +356,198 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Deque<T> {
         let deque = VecDeque::deserialize(deserializer)?;
         let maxlen = deque.len();
         Ok(Self { deque, maxlen })
+    }
+}
+
+#[cfg(test)]
+mod comparison_tests {
+    use super::Deque;
+    use std::collections::VecDeque;
+
+    #[test]
+    fn test_equal_deques() {
+        let mut deque1: Deque<i32> = Deque::new(3);
+        deque1.push_back(1);
+        deque1.push_back(2);
+        deque1.push_back(3);
+
+        let mut deque2: Deque<i32> = Deque::new(3);
+        deque2.push_back(1);
+        deque2.push_back(2);
+        deque2.push_back(3);
+
+        assert_eq!(
+            deque1, deque2,
+            "Deques with the same elements should be equal"
+        );
+    }
+
+    #[test]
+    fn test_unequal_deques_different_elements() {
+        let mut deque1: Deque<i32> = Deque::new(3);
+        deque1.push_back(1);
+        deque1.push_back(2);
+        deque1.push_back(3);
+
+        let mut deque2: Deque<i32> = Deque::new(3);
+        deque2.push_back(4);
+        deque2.push_back(5);
+        deque2.push_back(6);
+
+        assert_ne!(
+            deque1, deque2,
+            "Deques with different elements should not be equal"
+        );
+    }
+
+    #[test]
+    fn test_unequal_deques_different_lengths() {
+        let mut deque1: Deque<i32> = Deque::new(3);
+        deque1.push_back(1);
+        deque1.push_back(2);
+
+        let mut deque2: Deque<i32> = Deque::new(3);
+        deque2.push_back(1);
+        deque2.push_back(2);
+        deque2.push_back(3);
+
+        assert_ne!(
+            deque1, deque2,
+            "Deques with different lengths should not be equal"
+        );
+    }
+
+    #[test]
+    fn test_empty_deques_are_equal() {
+        let deque1: Deque<i32> = Deque::new(3);
+        let deque2: Deque<i32> = Deque::new(3);
+
+        assert_eq!(deque1, deque2, "Empty deques should be equal");
+    }
+
+    #[test]
+    fn test_partial_eq_with_subsequent_push_back() {
+        let mut deque1: Deque<i32> = Deque::new(3);
+        deque1.push_back(1);
+        deque1.push_back(2);
+        deque1.push_back(3);
+
+        let mut deque2: Deque<i32> = Deque::new(3);
+        deque2.push_back(1);
+        deque2.push_back(2);
+
+        assert_ne!(
+            deque1, deque2,
+            "Deque with missing elements should not be equal"
+        );
+
+        deque2.push_back(3);
+        assert_eq!(
+            deque1, deque2,
+            "After pushing the same element, deques should be equal"
+        );
+    }
+
+    #[test]
+    fn test_deque_eq_vecdeque() {
+        let deque: Deque<i32> = Deque::new_from_vec(vec![5, 6, 7], 3);
+        let vec_deque: VecDeque<i32> = vec![5, 6, 7].into_iter().collect();
+
+        assert_eq!(
+            deque, vec_deque,
+            "Deque should be equal to VecDeque with the same elements"
+        );
+    }
+
+    #[test]
+    fn test_vecdeque_eq_deque() {
+        let mut deque1: Deque<i32> = Deque::new(10);
+        deque1.push_back(1);
+        deque1.push_back(2);
+        deque1.push_back(3);
+
+        let mut vecdeque: VecDeque<i32> = VecDeque::new();
+        vecdeque.push_back(1);
+        vecdeque.push_back(2);
+        vecdeque.push_back(3);
+
+        assert_eq!(
+            vecdeque, deque1,
+            "VecDeque should be equal to Deque with the same elements"
+        );
+    }
+
+    #[test]
+    fn test_unequal_deque_and_vecdeque() {
+        let mut deque1: Deque<i32> = Deque::new(3);
+        deque1.push_back(1);
+        deque1.push_back(2);
+
+        let mut vecdeque: VecDeque<i32> = VecDeque::new();
+        vecdeque.push_back(3);
+        vecdeque.push_back(4);
+
+        assert_ne!(
+            deque1, vecdeque,
+            "Deque and VecDeque with different elements should not be equal"
+        );
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg(test)]
+mod serde_tests {
+    use super::Deque;
+
+    #[test]
+    fn test_serialize_empty_deque() {
+        let deque: Deque<i32> = Deque::new(3);
+        let serialized = serde_json::to_string(&deque).expect("Failed to serialize Deque");
+        assert_eq!(serialized, "[]");
+    }
+
+    #[test]
+    fn test_serialize_deque_with_elements() {
+        let mut deque: Deque<i32> = Deque::new(2);
+        deque.push_back(1);
+        deque.push_back(2);
+        let serialized = serde_json::to_string(&deque).expect("Failed to serialize Deque");
+        assert_eq!(serialized, "[1,2]");
+    }
+
+    #[test]
+    fn test_deserialize_empty_deque() {
+        let data = "[]";
+        let deque: Deque<i32> = serde_json::from_str(data).expect("Failed to deserialize Deque");
+        assert_eq!(deque.len(), 0);
+    }
+
+    #[test]
+    fn test_deserialize_deque_with_elements() {
+        let data = "[1,2,3]";
+        let deque: Deque<i32> = serde_json::from_str(data).expect("Failed to deserialize Deque");
+        assert_eq!(deque.len(), 3);
+        assert_eq!(deque.get(0), Some(&1));
+        assert_eq!(deque.get(1), Some(&2));
+        assert_eq!(deque.get(2), Some(&3));
+    }
+
+    #[test]
+    fn test_serialize_and_deserialize() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(10);
+        deque.push_back(20);
+        deque.push_back(30);
+
+        let serialized = serde_json::to_string(&deque).expect("Failed to serialize Deque");
+        assert_eq!(serialized, "[10,20,30]");
+
+        let deserialized: Deque<i32> =
+            serde_json::from_str(&serialized).expect("Failed to deserialize Deque");
+
+        assert_eq!(deserialized.len(), 3);
+        assert_eq!(deserialized.get(0), Some(&10));
+        assert_eq!(deserialized.get(1), Some(&20));
+        assert_eq!(deserialized.get(2), Some(&30));
     }
 }
