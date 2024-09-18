@@ -1,0 +1,26 @@
+[package]
+name = "fixed_deque"
+version = "0.1.0"
+edition = "2021"
+description = "A fixed size VecDeque to match Python Deque"
+authors = ["Akseli Lukkarila <akseli.lukkarila@nitor.com>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/Esgrove/fixed_deque"
+keywords = ["deque", "vecdeque"]
+categories = ["data-structures"]
+include = ["src/*", "Cargo.toml", "LICENSE", "README.md"]
+
+[dependencies]
+serde = { version = "1.0", optional = true, features = ["derive"] }
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+enum_glob_use = "deny"
+unwrap_used = "deny"
