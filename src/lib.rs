@@ -92,6 +92,56 @@ impl<T> Deque<T> {
         Self { deque, maxlen }
     }
 
+    /// Returns the maximum length of the deque.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let deque: Deque<f64> = (vec![1.0, 2.0, 3.0], 5).into();
+    /// assert_eq!(deque.len(), 3);
+    /// assert_eq!(deque.maxlen(), 5);
+    /// ```
+    #[must_use]
+    pub fn maxlen(&self) -> usize {
+        self.maxlen
+    }
+
+    /// Clears all elements from the deque, making it empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque: Deque<i32> = (vec![1, 2, 3], 5).into();
+    /// assert_eq!(deque.len(), 3);
+    /// deque.clear();
+    /// assert_eq!(deque.len(), 0);
+    /// ```
+    pub fn clear(&mut self) {
+        self.deque.clear();
+    }
+
+    /// Returns `true` if the deque contains an element equal to the given value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let deque: Deque<&str> = (vec!["1", "2", "3"], 3).into();
+    /// assert!(deque.contains(&"2"));
+    /// assert!(!deque.contains(&"4"));
+    /// ```
+    pub fn contains(&self, value: &T) -> bool
+    where
+        T: PartialEq,
+    {
+        self.deque.contains(value)
+    }
+
     /// Add an element to the back of the Deque.
     /// If the Deque exceeds its maximum length, the front element is removed.
     ///
@@ -156,7 +206,7 @@ impl<T> Deque<T> {
         self.deque.is_empty()
     }
 
-    /// Returns the last element of the Deque.
+    /// Provides a reference to the back element, or `None` if the deque is empty.
     ///
     /// # Examples
     ///
@@ -171,6 +221,58 @@ impl<T> Deque<T> {
     #[must_use]
     pub fn back(&self) -> Option<&T> {
         self.deque.back()
+    }
+
+    /// Provides a mutable reference to the back element, or `None` if the deque is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque: Deque<i32> = (vec![1, 2, 3], 5).into();
+    /// if let Some(back) = deque.back_mut() {
+    ///     *back = 20;
+    /// }
+    /// assert_eq!(deque.back(), Some(&20));
+    /// ```
+    pub fn back_mut(&mut self) -> Option<&mut T> {
+        self.deque.back_mut()
+    }
+
+    /// Provides a reference to the front element, or `None` if the deque is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque: Deque<i32> = ([1, 2, 3], 5).into();
+    /// assert_eq!(deque.front(), Some(&1));
+    ///
+    /// let empty_deque: Deque<i32> = Deque::new(3);
+    /// assert_eq!(empty_deque.front(), None);
+    /// ```
+    #[must_use]
+    pub fn front(&self) -> Option<&T> {
+        self.deque.front()
+    }
+
+    /// Provides a mutable reference to the front element, or `None` if the deque is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque: Deque<i32> = ([1, 2, 3], 5).into();
+    /// if let Some(front) = deque.front_mut() {
+    ///     *front = 10;
+    /// }
+    /// assert_eq!(deque.front(), Some(&10));
+    /// ```
+    pub fn front_mut(&mut self) -> Option<&mut T> {
+        self.deque.front_mut()
     }
 
     /// Returns an immutable reference to the element at the given index.
