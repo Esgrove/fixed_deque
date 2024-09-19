@@ -46,11 +46,11 @@ impl<T> Deque<T> {
     /// ```
     /// use fixed_deque::Deque;
     ///
-    /// let deque: Deque<i32> = Deque::new_from(1, 3);
+    /// let deque: Deque<i32> = Deque::from(1, 3);
     /// assert_eq!(deque.len(), 1);
     /// assert_eq!(deque.get(0), Some(&1));
     /// ```
-    pub fn new_from(value: T, maxlen: usize) -> Self {
+    pub fn from(value: T, maxlen: usize) -> Self {
         Self {
             deque: VecDeque::from([value]),
             maxlen,
@@ -64,11 +64,11 @@ impl<T> Deque<T> {
     /// ```
     /// use fixed_deque::Deque;
     ///
-    /// let deque: Deque<i32> = Deque::new_from_vec(vec![1, 2, 3], 3);
+    /// let deque: Deque<i32> = Deque::from_vec(vec![1, 2, 3], 3);
     /// assert_eq!(deque.len(), 3);
     /// ```
     #[must_use]
-    pub fn new_from_vec(vec: Vec<T>, maxlen: usize) -> Self {
+    pub fn from_vec(vec: Vec<T>, maxlen: usize) -> Self {
         Self {
             deque: VecDeque::from(vec),
             maxlen,
@@ -84,11 +84,11 @@ impl<T> Deque<T> {
     /// use fixed_deque::Deque;
     ///
     /// let vec_deque: VecDeque<i32> = VecDeque::from(vec![1, 2, 3]);
-    /// let deque: Deque<i32> = Deque::new_from_vec_deque(vec_deque, 3);
+    /// let deque: Deque<i32> = Deque::from_vec_deque(vec_deque, 3);
     /// assert_eq!(deque.len(), 3);
     /// ```
     #[must_use]
-    pub const fn new_from_vec_deque(deque: VecDeque<T>, maxlen: usize) -> Self {
+    pub const fn from_vec_deque(deque: VecDeque<T>, maxlen: usize) -> Self {
         Self { deque, maxlen }
     }
 
@@ -249,6 +249,8 @@ impl<T> Deque<T> {
     }
 
     /// Returns the number of elements the deque can hold without reallocating.
+    /// If the number is larger than the max size,
+    /// returns the max number of elements instead.
     ///
     /// # Examples
     ///
@@ -260,7 +262,70 @@ impl<T> Deque<T> {
     /// ```
     #[must_use]
     pub fn capacity(&self) -> usize {
-        self.deque.capacity()
+        self.deque.capacity().min(self.maxlen)
+    }
+}
+
+// Implement From for single value.
+impl<T> From<(T, usize)> for Deque<T> {
+    /// Creates a new Deque from a single value and a maximum length.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let deque: Deque<i32> = (1, 3).into();
+    /// assert_eq!(deque.len(), 1);
+    /// assert_eq!(deque.get(0), Some(&1));
+    /// ```
+    fn from((value, maxlen): (T, usize)) -> Self {
+        Deque {
+            deque: VecDeque::from([value]),
+            maxlen,
+        }
+    }
+}
+
+// Implement From for Vec
+impl<T> From<(Vec<T>, usize)> for Deque<T> {
+    /// Creates a new Deque from a Vec and a maximum length.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let deque: Deque<i32> = (vec![1, 2, 3], 3).into();
+    /// assert_eq!(deque.len(), 3);
+    /// assert_eq!(deque.get(0), Some(&1));
+    /// assert_eq!(deque.get(2), Some(&3));
+    /// ```
+    fn from((vec, maxlen): (Vec<T>, usize)) -> Self {
+        Deque {
+            deque: VecDeque::from(vec),
+            maxlen,
+        }
+    }
+}
+
+// Implement From for VecDeque
+impl<T> From<(VecDeque<T>, usize)> for Deque<T> {
+    /// Creates a new Deque from a VecDeque and a maximum length.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::collections::VecDeque;
+    /// use fixed_deque::Deque;
+    ///
+    /// let vec_deque: VecDeque<i32> = VecDeque::from(vec![1, 2, 3]);
+    /// let deque: Deque<i32> = (vec_deque, 3).into();
+    /// assert_eq!(deque.len(), 3);
+    /// assert_eq!(deque.get(0), Some(&1));
+    /// ```
+    fn from((deque, maxlen): (VecDeque<T>, usize)) -> Self {
+        Deque { deque, maxlen }
     }
 }
 
@@ -333,7 +398,7 @@ impl<T> FromIterator<T> for Deque<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let deque: VecDeque<T> = iter.into_iter().collect();
         let maxlen = deque.len();
-        Self::new_from_vec_deque(deque, maxlen)
+        Self::from_vec_deque(deque, maxlen)
     }
 }
 
@@ -450,7 +515,7 @@ mod comparison_tests {
 
     #[test]
     fn test_deque_eq_vecdeque() {
-        let deque: Deque<i32> = Deque::new_from_vec(vec![5, 6, 7], 3);
+        let deque: Deque<i32> = Deque::from_vec(vec![5, 6, 7], 3);
         let vec_deque: VecDeque<i32> = vec![5, 6, 7].into_iter().collect();
 
         assert_eq!(

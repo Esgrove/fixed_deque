@@ -22,7 +22,7 @@ deque.push_back(4);
 assert_eq!(deque.len(), 3);
 assert_eq!(deque.get(0), Some(&2));
 
-deque = Deque::new_from_vec(vec![1, 2, 3, 4, 5], 5);
+deque = Deque::from_vec(vec![1, 2, 3, 4, 5], 5);
 assert_eq!(deque.len(), 5);
 let overflow = deque.push_back(6);
 assert_eq!(overflow, Some(1));
