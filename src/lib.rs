@@ -427,7 +427,41 @@ impl<T> From<(T, usize)> for Deque<T> {
     }
 }
 
-// Implement From for Vec
+// Implement From for arrays.
+impl<T, const N: usize> From<([T; N], usize)> for Deque<T> {
+    /// Creates a new Deque from an array and a maximum length.
+    /// If the array is larger than the maximum length,
+    /// only the first `maxlen` elements are used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let deque: Deque<i32> = ([1, 2, 3], 16).into();
+    /// assert_eq!(deque.len(), 3);
+    /// assert_eq!(deque.maxlen(), 16);
+    /// assert_eq!(deque.get(0), Some(&1));
+    /// assert_eq!(deque.get(2), Some(&3));
+    ///
+    /// let deque: Deque<f64> = ([1.0, 2.0, 3.0], 2).into();
+    /// assert_eq!(deque.len(), 2);
+    /// assert_eq!(deque.maxlen(), 2);
+    /// assert_eq!(deque.get(0), Some(&1.0));
+    /// assert_eq!(deque.get(1), Some(&2.0));
+    /// ```
+    fn from((array, maxlen): ([T; N], usize)) -> Self {
+        let deque = if N > maxlen {
+            // If the array size exceeds maxlen, take only the first `maxlen` elements.
+            VecDeque::from(array.into_iter().take(maxlen).collect::<Vec<_>>())
+        } else {
+            VecDeque::from(array)
+        };
+        Deque { deque, maxlen }
+    }
+}
+
+// Implement From for Vec.
 impl<T> From<(Vec<T>, usize)> for Deque<T> {
     /// Creates a new Deque from a Vec and a maximum length.
     ///
@@ -449,7 +483,7 @@ impl<T> From<(Vec<T>, usize)> for Deque<T> {
     }
 }
 
-// Implement From for VecDeque
+// Implement From for VecDeque.
 impl<T> From<(VecDeque<T>, usize)> for Deque<T> {
     /// Creates a new Deque from a VecDeque and a maximum length.
     ///
