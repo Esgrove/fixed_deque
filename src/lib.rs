@@ -19,7 +19,7 @@ pub struct Deque<T> {
 }
 
 impl<T> Deque<T> {
-    /// Creates a new Deque with a given maximum length.
+    /// Creates a new empty Deque with a given maximum length.
     ///
     /// # Examples
     ///
@@ -61,6 +61,8 @@ impl<T> Deque<T> {
     }
 
     /// Creates a new Deque from an existing `Vec` with a given maximum length.
+    /// If the given vector is larger than the maximum length,
+    /// only the first `maxlen` elements are used.
     ///
     /// # Examples
     ///
@@ -71,7 +73,8 @@ impl<T> Deque<T> {
     /// assert_eq!(deque.len(), 3);
     /// ```
     #[must_use]
-    pub fn from_vec(vec: Vec<T>, maxlen: usize) -> Self {
+    pub fn from_vec(mut vec: Vec<T>, maxlen: usize) -> Self {
+        vec.truncate(maxlen);
         Self {
             deque: VecDeque::from(vec),
             maxlen,
@@ -79,6 +82,8 @@ impl<T> Deque<T> {
     }
 
     /// Creates a new Deque from an existing `VecDeque` with a given maximum length.
+    /// If the given `VecDeque` is larger than the maximum length,
+    /// only the first `maxlen` elements are used.
     ///
     /// # Examples
     ///
@@ -91,7 +96,8 @@ impl<T> Deque<T> {
     /// assert_eq!(deque.len(), 3);
     /// ```
     #[must_use]
-    pub const fn from_vec_deque(deque: VecDeque<T>, maxlen: usize) -> Self {
+    pub fn from_vec_deque(mut deque: VecDeque<T>, maxlen: usize) -> Self {
+        deque.truncate(maxlen);
         Self { deque, maxlen }
     }
 
@@ -475,7 +481,8 @@ impl<T> From<(Vec<T>, usize)> for Deque<T> {
     /// assert_eq!(deque.get(0), Some(&1));
     /// assert_eq!(deque.get(2), Some(&3));
     /// ```
-    fn from((vec, maxlen): (Vec<T>, usize)) -> Self {
+    fn from((mut vec, maxlen): (Vec<T>, usize)) -> Self {
+        vec.truncate(maxlen);
         Deque {
             deque: VecDeque::from(vec),
             maxlen,
@@ -498,7 +505,8 @@ impl<T> From<(VecDeque<T>, usize)> for Deque<T> {
     /// assert_eq!(deque.len(), 3);
     /// assert_eq!(deque.get(0), Some(&1));
     /// ```
-    fn from((deque, maxlen): (VecDeque<T>, usize)) -> Self {
+    fn from((mut deque, maxlen): (VecDeque<T>, usize)) -> Self {
+        deque.truncate(maxlen);
         Deque { deque, maxlen }
     }
 }
