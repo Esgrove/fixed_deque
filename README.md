@@ -20,13 +20,24 @@ deque.push_back(2);
 deque.push_back(3);
 deque.push_back(4);
 assert_eq!(deque.len(), 3);
+assert_eq!(deque.maxlen(), 3);
 assert_eq!(deque.get(0), Some(&2));
 
-deque = Deque::from_vec(vec![1, 2, 3, 4, 5], 5);
+let mut deque = Deque::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0], 5);
 assert_eq!(deque.len(), 5);
-let overflow = deque.push_back(6);
-assert_eq!(overflow, Some(1));
+let popped = deque.push_back(6.0);
+assert_eq!(popped, Some(1.0));
 assert_eq!(deque.len(), 5);
+
+let mut deque: Deque<&str> = (vec!["a", "b", "c"], 5).into();
+assert_eq!(deque.len(), 3);
+assert_eq!(deque.maxlen(), 5);
+assert_eq!(deque.front(), Some(&"a"));
+deque.push_front("1");
+deque.push_front("2");
+deque.push_front("3");
+assert_eq!(deque.front(), Some(&"3"));
+assert_eq!(deque.back(), Some(&"b"));
 ```
 
 ## Features

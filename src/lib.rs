@@ -7,7 +7,10 @@ use std::ops::{Index, IndexMut};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// A fixed size `VecDeque` to match Python Deque
+/// A fixed size `VecDeque` to match Python Deque.
+/// Once a deque is full,
+/// when a new item is added,
+/// an element from the opposite end is popped and returned.
 /// <https://docs.python.org/3/library/collections.html#collections.deque>
 #[derive(Debug, Default, Clone)]
 pub struct Deque<T> {
@@ -143,7 +146,9 @@ impl<T> Deque<T> {
     }
 
     /// Add an element to the back of the Deque.
-    /// If the Deque exceeds its maximum length, the front element is removed.
+    /// If the Deque exceeds its maximum length,
+    /// the front element is popped and returned.
+    /// Otherwise, `None` is returned.
     ///
     /// # Examples
     ///
@@ -160,10 +165,43 @@ impl<T> Deque<T> {
     /// assert_eq!(deque.len(), 3);
     /// ```
     pub fn push_back(&mut self, value: T) -> Option<T> {
-        self.deque.push_back(value);
-        if self.deque.len() > self.maxlen {
-            self.deque.pop_front()
+        if self.deque.len() == self.maxlen {
+            // If at max capacity, pop the front element before pushing
+            let popped = self.deque.pop_front();
+            self.deque.push_back(value);
+            popped
         } else {
+            self.deque.push_back(value);
+            None
+        }
+    }
+
+    /// Prepends an element to the deque.
+    /// If the Deque exceeds its maximum length,
+    /// the back element is popped and returned.
+    /// Otherwise, `None` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque = Deque::new(2);
+    /// deque.push_front(1);
+    /// deque.push_front(2);
+    /// assert_eq!(deque.front(), Some(&2));
+    /// deque.push_front(3);
+    /// assert_eq!(deque.front(), Some(&3));
+    /// assert_eq!(deque.len(), 2);
+    /// ```
+    pub fn push_front(&mut self, value: T) -> Option<T> {
+        if self.deque.len() == self.maxlen {
+            // If at max capacity, pop the back element before pushing
+            let popped = self.deque.pop_back();
+            self.deque.push_front(value);
+            popped
+        } else {
+            self.deque.push_front(value);
             None
         }
     }
@@ -247,7 +285,7 @@ impl<T> Deque<T> {
     /// ```
     /// use fixed_deque::Deque;
     ///
-    /// let mut deque: Deque<i32> = ([1, 2, 3], 5).into();
+    /// let mut deque: Deque<i32> = (vec![1, 2, 3], 5).into();
     /// assert_eq!(deque.front(), Some(&1));
     ///
     /// let empty_deque: Deque<i32> = Deque::new(3);
@@ -265,7 +303,7 @@ impl<T> Deque<T> {
     /// ```
     /// use fixed_deque::Deque;
     ///
-    /// let mut deque: Deque<i32> = ([1, 2, 3], 5).into();
+    /// let mut deque: Deque<i32> = (vec![1, 2, 3], 5).into();
     /// if let Some(front) = deque.front_mut() {
     ///     *front = 10;
     /// }
