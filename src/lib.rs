@@ -607,6 +607,75 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Deque<T> {
 }
 
 #[cfg(test)]
+mod initialization_tests {
+    use super::Deque;
+    use std::collections::VecDeque;
+
+    #[test]
+    fn test_initialization() {
+        let mut deque: Deque<i32> = Deque::new(1024);
+        assert_eq!(deque.len(), 0);
+        assert_eq!(deque.maxlen(), 1024);
+
+        deque = Deque::from(1, 128);
+        assert_eq!(deque.len(), 1);
+        assert_eq!(deque.maxlen(), 128);
+
+        let deque = Deque::from_vec(vec![1, 2, 3, 4, 5], 5);
+        assert_eq!(deque.len(), 5);
+        assert_eq!(deque.maxlen(), 5);
+
+        let vec_deque = VecDeque::from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        let deque = Deque::from_vec_deque(vec_deque, 100);
+        assert_eq!(deque.len(), 10);
+        assert_eq!(deque.maxlen(), 100);
+    }
+
+    #[test]
+    fn test_initialization_with_into() {
+        let deque: Deque<&str> = ("a", 1024).into();
+        assert_eq!(deque.len(), 1);
+        assert_eq!(deque.maxlen(), 1024);
+
+        let mut deque: Deque<usize> = ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5).into();
+        assert_eq!(deque.len(), 5);
+        assert_eq!(deque.maxlen(), 5);
+
+        let vec_deque = VecDeque::from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        deque = (vec_deque, 100).into();
+        assert_eq!(deque.len(), 10);
+        assert_eq!(deque.maxlen(), 100);
+    }
+
+    #[test]
+    fn test_initialization_from_longer_than_maxlen() {
+        let deque = Deque::from_vec(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5);
+        assert_eq!(deque.len(), 5);
+        assert_eq!(deque.maxlen(), 5);
+
+        let vec_deque = VecDeque::from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        let deque = Deque::from_vec_deque(vec_deque, 8);
+        assert_eq!(deque.len(), 8);
+        assert_eq!(deque.maxlen(), 8);
+
+        let deque: Deque<i32> = ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5).into();
+        assert_eq!(deque.len(), 5);
+        assert_eq!(deque.maxlen(), 5);
+
+        let deque: Deque<i32> = (vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 6).into();
+        assert_eq!(deque.len(), 6);
+        assert_eq!(deque.maxlen(), 6);
+
+        let vec_deque = VecDeque::from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        let deque: Deque<i32> = (vec_deque, 8).into();
+        assert_eq!(deque.len(), 8);
+        assert_eq!(deque.maxlen(), 8);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&8));
+    }
+}
+
+#[cfg(test)]
 mod comparison_tests {
     use super::Deque;
     use std::collections::VecDeque;
