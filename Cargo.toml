@@ -1,6 +1,6 @@
 [package]
 name = "fixed_deque"
-version = "1.2.1"
+version = "1.2.2"
 edition = "2021"
 description = "A fixed size VecDeque to match Python Deque"
 authors = ["Akseli Lukkarila <akseli.lukkarila@nitor.com>"]

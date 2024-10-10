@@ -861,6 +861,7 @@ mod serde_tests {
         let deserialized: Deque<i32> =
             serde_json::from_str(&serialized).expect("Failed to deserialize Deque");
 
+        assert_eq!(deque, deserialized);
         assert_eq!(deserialized.len(), 3);
         assert_eq!(deserialized.get(0), Some(&10));
         assert_eq!(deserialized.get(1), Some(&20));
