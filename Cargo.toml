@@ -1,6 +1,6 @@
 [package]
 name = "fixed_deque"
-version = "1.2.2"
+version = "1.3.0"
 edition = "2021"
 description = "A fixed size VecDeque to match Python Deque"
 authors = ["Akseli Lukkarila <akseli.lukkarila@nitor.com>"]
@@ -26,3 +26,5 @@ unsafe_code = "forbid"
 [lints.clippy]
 enum_glob_use = "deny"
 unwrap_used = "deny"
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }

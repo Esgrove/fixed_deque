@@ -7,7 +7,7 @@ A fixed size `VecDeque` for Rust to match
 the [Python Deque](https://docs.python.org/3/library/collections.html#collections.deque) functionality.
 
 Implemented as a thin wrapper around `std::collections::VecDeque` with custom handling for `push_back` and `push_front`
-that prevents the VecDeque from growing past the set maximum length.
+that prevents the `VecDeque` from growing past the set maximum length.
 
 Once the deque is full, when a new item is pushed to the deque,
 an element from the opposite end is popped and returned.
