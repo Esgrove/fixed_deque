@@ -394,6 +394,33 @@ impl<T> Deque<T> {
         self.deque.iter()
     }
 
+    /// Returns a front-to-back mutable iterator.
+    ///
+    /// This allows modifying each element in the deque in place.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque = Deque::new(3);
+    /// deque.push_back(5);
+    /// deque.push_back(3);
+    /// deque.push_back(4);
+    ///
+    /// for value in deque.iter_mut() {
+    ///     *value *= 2;
+    /// }
+    ///
+    /// let b: &[_] = &[10, 6, 8];
+    /// let c: Vec<i32> = deque.iter().copied().collect();
+    /// assert_eq!(&c[..], b);
+    /// ```
+    #[must_use]
+    pub fn iter_mut(&mut self) -> std::collections::vec_deque::IterMut<T> {
+        self.deque.iter_mut()
+    }
+
     /// Returns the number of elements the deque can hold without reallocating.
     /// If the number is larger than the max size,
     /// returns the max number of elements instead.
