@@ -8,6 +8,7 @@ use std::ops::{Index, IndexMut};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// A fixed size `VecDeque` to match Python Deque.
+///
 /// Once a deque is full,
 /// when a new item is added,
 /// an element from the opposite end is popped and returned.
@@ -113,7 +114,7 @@ impl<T> Deque<T> {
     /// assert_eq!(deque.maxlen(), 5);
     /// ```
     #[must_use]
-    pub fn maxlen(&self) -> usize {
+    pub const fn maxlen(&self) -> usize {
         self.maxlen
     }
 
@@ -453,7 +454,7 @@ impl<T> From<(T, usize)> for Deque<T> {
     /// assert_eq!(deque.get(0), Some(&1));
     /// ```
     fn from((value, maxlen): (T, usize)) -> Self {
-        Deque {
+        Self {
             deque: VecDeque::from([value]),
             maxlen,
         }
@@ -490,7 +491,7 @@ impl<T, const N: usize> From<([T; N], usize)> for Deque<T> {
         } else {
             VecDeque::from(array)
         };
-        Deque { deque, maxlen }
+        Self { deque, maxlen }
     }
 }
 
@@ -510,7 +511,7 @@ impl<T> From<(Vec<T>, usize)> for Deque<T> {
     /// ```
     fn from((mut vec, maxlen): (Vec<T>, usize)) -> Self {
         vec.truncate(maxlen);
-        Deque {
+        Self {
             deque: VecDeque::from(vec),
             maxlen,
         }
@@ -519,7 +520,7 @@ impl<T> From<(Vec<T>, usize)> for Deque<T> {
 
 // Implement From for VecDeque.
 impl<T> From<(VecDeque<T>, usize)> for Deque<T> {
-    /// Creates a new Deque from a VecDeque and a maximum length.
+    /// Creates a new Deque from a `VecDeque` and a maximum length.
     ///
     /// # Examples
     ///
@@ -534,7 +535,7 @@ impl<T> From<(VecDeque<T>, usize)> for Deque<T> {
     /// ```
     fn from((mut deque, maxlen): (VecDeque<T>, usize)) -> Self {
         deque.truncate(maxlen);
-        Deque { deque, maxlen }
+        Self { deque, maxlen }
     }
 }
 
