@@ -391,7 +391,7 @@ impl<T> Deque<T> {
     /// assert_eq!(&c[..], b);
     /// ```
     #[must_use]
-    pub fn iter(&self) -> std::collections::vec_deque::Iter<T> {
+    pub fn iter(&'_ self) -> std::collections::vec_deque::Iter<'_, T> {
         self.deque.iter()
     }
 
@@ -418,7 +418,7 @@ impl<T> Deque<T> {
     /// assert_eq!(&c[..], b);
     /// ```
     #[must_use]
-    pub fn iter_mut(&mut self) -> std::collections::vec_deque::IterMut<T> {
+    pub fn iter_mut(&'_ mut self) -> std::collections::vec_deque::IterMut<'_, T> {
         self.deque.iter_mut()
     }
 
