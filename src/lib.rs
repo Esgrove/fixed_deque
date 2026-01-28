@@ -612,6 +612,18 @@ impl<T> FromIterator<T> for Deque<T> {
     }
 }
 
+impl<T> Extend<T> for Deque<T> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        self.deque.extend(iter);
+    }
+}
+
+impl<'a, T: 'a + Copy> Extend<&'a T> for Deque<T> {
+    fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
+        self.deque.extend(iter);
+    }
+}
+
 #[cfg(feature = "serde")]
 impl<T: Serialize> Serialize for Deque<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
