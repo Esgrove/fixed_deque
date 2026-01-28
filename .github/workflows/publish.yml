@@ -10,8 +10,8 @@ env:
 
 jobs:
   publish:
-    name: Publish to crates.io
-    runs-on: ubuntu-latest
+    name: Publish
+    runs-on: ubuntu-slim
     environment: release
     permissions:
       contents: read
