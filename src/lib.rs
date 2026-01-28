@@ -636,7 +636,7 @@ impl<T> Extend<T> for Deque<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        let remaining_space = self.maxlen - self.deque.len();
+        let remaining_space = self.maxlen.saturating_sub(self.deque.len());
 
         // If we know the iterator fits, use direct extend
         if iter
@@ -682,7 +682,7 @@ where
         I: IntoIterator<Item = &'a T>,
     {
         let iter = iter.into_iter();
-        let remaining_space = self.maxlen - self.deque.len();
+        let remaining_space = self.maxlen.saturating_sub(self.deque.len());
 
         // If we know the iterator fits, use direct extend
         if iter
