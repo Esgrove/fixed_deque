@@ -1,0 +1,64 @@
+name: Publish to crates.io
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on main branch
+        run: |
+          # Get the commit SHA that the tag points to
+          TAG_COMMIT=$(git rev-list -n 1 "$GITHUB_REF_NAME")
+          # Check if this commit is on the main branch
+          if ! git branch -r --contains "$TAG_COMMIT" | grep -q 'origin/main'; then
+            echo "Error: Tag $GITHUB_REF_NAME is not on the main branch"
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME is on main branch"
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Verify package version matches tag
+        run: |
+          CARGO_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$CARGO_VERSION" != "$TAG_VERSION" ]; then
+            echo "Error: Cargo.toml version ($CARGO_VERSION) does not match tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "Version verified: $CARGO_VERSION"
+
+      - name: Run tests
+        run: cargo test --all-features
+
+      - name: Authenticate with crates.io
+        uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: Dryrun publish
+        run: cargo publish --dry-run
+
+      - name: Publish to crates.io
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
