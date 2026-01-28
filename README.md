@@ -55,6 +55,9 @@ Contributions are very welcome.
 If you feel something could be added or improved,
 please do open a PR.
 
+- Always add test cases for new functionality
+- Ensure that code is formatted with `cargo fmt` and `cargo clippy --all-features` passes
+
 ## License
 
 MIT
