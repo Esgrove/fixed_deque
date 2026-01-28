@@ -612,6 +612,94 @@ impl<T> FromIterator<T> for Deque<T> {
     }
 }
 
+impl<T> Extend<T> for Deque<T> {
+    /// Extends the deque with the contents of an iterator.
+    ///
+    /// Elements are added to the back of the deque.
+    /// If the number of elements would exceed `maxlen`,
+    /// elements are removed from the front to maintain the maximum length constraint.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque: Deque<i32> = Deque::new(3);
+    /// deque.push_back(1);
+    /// deque.extend([2, 3, 4]);
+    /// assert_eq!(deque.len(), 3);
+    /// assert_eq!(deque.front(), Some(&2));
+    /// assert_eq!(deque.back(), Some(&4));
+    /// ```
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let iter = iter.into_iter();
+        let remaining_space = self.maxlen - self.deque.len();
+
+        // If we know the iterator fits, use direct extend
+        if iter
+            .size_hint()
+            .1
+            .is_some_and(|upper| upper <= remaining_space)
+        {
+            self.deque.extend(iter);
+        } else {
+            // Otherwise, push one by one to respect maxlen
+            for item in iter {
+                self.push_back(item);
+            }
+        }
+    }
+}
+
+impl<'a, T> Extend<&'a T> for Deque<T>
+where
+    T: Copy,
+{
+    /// Extends the deque with the contents of an iterator of references.
+    ///
+    /// Elements are copied and added to the back of the deque.
+    /// If the number of elements would exceed `maxlen`,
+    /// elements are removed from the front to maintain the maximum length constraint.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use fixed_deque::Deque;
+    ///
+    /// let mut deque: Deque<i32> = Deque::new(3);
+    /// deque.push_back(1);
+    /// let values = [2, 3, 4];
+    /// deque.extend(&values);
+    /// assert_eq!(deque.len(), 3);
+    /// assert_eq!(deque.front(), Some(&2));
+    /// assert_eq!(deque.back(), Some(&4));
+    /// ```
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = &'a T>,
+    {
+        let iter = iter.into_iter();
+        let remaining_space = self.maxlen - self.deque.len();
+
+        // If we know the iterator fits, use direct extend
+        if iter
+            .size_hint()
+            .1
+            .is_some_and(|upper| upper <= remaining_space)
+        {
+            self.deque.extend(iter);
+        } else {
+            // Otherwise, push one by one to respect maxlen
+            for &item in iter {
+                self.push_back(item);
+            }
+        }
+    }
+}
+
 #[cfg(feature = "serde")]
 impl<T: Serialize> Serialize for Deque<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -835,6 +923,479 @@ mod comparison_tests {
             deque1, vecdeque,
             "Deque and VecDeque with different elements should not be equal"
         );
+    }
+}
+
+#[cfg(test)]
+mod extend_tests {
+    use super::Deque;
+
+    #[test]
+    fn test_extend_owned_values() {
+        let mut deque: Deque<i32> = Deque::new(5);
+        deque.push_back(1);
+        deque.extend([2, 3, 4]);
+
+        assert_eq!(deque.len(), 4);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&4));
+    }
+
+    #[test]
+    fn test_extend_respects_maxlen() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(1);
+        deque.extend([2, 3, 4, 5]);
+
+        assert_eq!(deque.len(), 3);
+        assert_eq!(deque.maxlen(), 3);
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_empty_iterator() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(1);
+        deque.extend(std::iter::empty::<i32>());
+
+        assert_eq!(deque.len(), 1);
+        assert_eq!(deque.front(), Some(&1));
+    }
+
+    #[test]
+    fn test_extend_on_empty_deque() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend([1, 2, 3]);
+
+        assert_eq!(deque.len(), 3);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&3));
+    }
+
+    #[test]
+    fn test_extend_on_full_deque() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(1);
+        deque.push_back(2);
+        deque.push_back(3);
+        deque.extend([4, 5]);
+
+        assert_eq!(deque.len(), 3);
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_references() {
+        let mut deque: Deque<i32> = Deque::new(5);
+        deque.push_back(1);
+        let values = [2, 3, 4];
+        deque.extend(&values);
+
+        assert_eq!(deque.len(), 4);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&4));
+    }
+
+    #[test]
+    fn test_extend_references_respects_maxlen() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(1);
+        let values = [2, 3, 4, 5];
+        deque.extend(&values);
+
+        assert_eq!(deque.len(), 3);
+        assert_eq!(deque.maxlen(), 3);
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_from_vec() {
+        let mut deque: Deque<i32> = Deque::new(4);
+        deque.extend(vec![1, 2, 3, 4, 5, 6]);
+
+        assert_eq!(deque.len(), 4);
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&6));
+    }
+
+    #[test]
+    fn test_extend_with_iterator() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((1..=5).map(|x| x * 2));
+
+        assert_eq!(deque.len(), 3);
+        assert_eq!(deque.front(), Some(&6));
+        assert_eq!(deque.back(), Some(&10));
+    }
+
+    #[test]
+    fn test_extend_string_references() {
+        let mut deque: Deque<char> = Deque::new(4);
+        let chars: Vec<char> = "hello".chars().collect();
+        deque.extend(&chars);
+
+        assert_eq!(deque.len(), 4);
+        assert_eq!(deque.front(), Some(&'e'));
+        assert_eq!(deque.back(), Some(&'o'));
+    }
+
+    #[test]
+    fn test_extend_fits_within_remaining_space() {
+        // maxlen 10, contains 1 element, extend adds 5 elements (fits easily)
+        let mut deque: Deque<i32> = Deque::new(10);
+        deque.push_back(1);
+        deque.extend([2, 3, 4, 5, 6]);
+
+        assert_eq!(deque.len(), 6);
+        assert_eq!(deque.maxlen(), 10);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&6));
+    }
+
+    #[test]
+    fn test_extend_fills_exactly() {
+        // maxlen 5, contains 2 elements, extend adds exactly 3 to fill it
+        let mut deque: Deque<i32> = Deque::new(5);
+        deque.push_back(1);
+        deque.push_back(2);
+        deque.extend([3, 4, 5]);
+
+        assert_eq!(deque.len(), 5);
+        assert_eq!(deque.maxlen(), 5);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_references_fits_within_remaining_space() {
+        // maxlen 10, contains 1 element, extend adds 5 elements (fits easily)
+        let mut deque: Deque<i32> = Deque::new(10);
+        deque.push_back(1);
+        let values = [2, 3, 4, 5, 6];
+        deque.extend(&values);
+
+        assert_eq!(deque.len(), 6);
+        assert_eq!(deque.maxlen(), 10);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&6));
+    }
+
+    #[test]
+    fn test_extend_references_fills_exactly() {
+        // maxlen 5, contains 2 elements, extend adds exactly 3 to fill it
+        let mut deque: Deque<i32> = Deque::new(5);
+        deque.push_back(1);
+        deque.push_back(2);
+        let values = [3, 4, 5];
+        deque.extend(&values);
+
+        assert_eq!(deque.len(), 5);
+        assert_eq!(deque.maxlen(), 5);
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_with_filter_iterator() {
+        // filter() has unknown upper bound (size_hint returns (0, None) for upper)
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((1..=10).filter(|x| x % 2 == 0)); // 2, 4, 6, 8, 10
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&6));
+        assert_eq!(deque.back(), Some(&10));
+    }
+
+    #[test]
+    fn test_extend_with_take_iterator() {
+        // take() has known upper bound
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((1..=100).take(5)); // 1, 2, 3, 4, 5
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_with_skip_iterator() {
+        // skip() preserves size_hint from inner iterator
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((1..=10).skip(5)); // 6, 7, 8, 9, 10
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&8));
+        assert_eq!(deque.back(), Some(&10));
+    }
+
+    #[test]
+    fn test_extend_with_chain_iterator() {
+        // chain() combines two iterators
+        let mut deque: Deque<i32> = Deque::new(4);
+        deque.extend([1, 2].into_iter().chain([3, 4, 5, 6]));
+
+        assert_eq!(deque.len(), 4);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&6));
+    }
+
+    #[test]
+    fn test_extend_with_flat_map_iterator() {
+        // flat_map() has no upper bound
+        let mut deque: Deque<i32> = Deque::new(4);
+        deque.extend([1, 2, 3].into_iter().flat_map(|x| [x, x * 10]));
+        // produces: 1, 10, 2, 20, 3, 30
+
+        assert_eq!(deque.len(), 4);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&2));
+        assert_eq!(deque.back(), Some(&30));
+    }
+
+    #[test]
+    fn test_extend_with_cycle_take_iterator() {
+        // cycle().take() - cycle has no upper bound but take limits it
+        let mut deque: Deque<i32> = Deque::new(5);
+        deque.extend([1, 2, 3].into_iter().cycle().take(7));
+        // produces: 1, 2, 3, 1, 2, 3, 1
+
+        assert_eq!(deque.len(), 5);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&1));
+    }
+
+    #[test]
+    fn test_extend_with_enumerate_iterator() {
+        // enumerate() preserves size_hint
+        let mut deque: Deque<(usize, i32)> = Deque::new(3);
+        deque.extend([10, 20, 30, 40, 50].into_iter().enumerate());
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&(2, 30)));
+        assert_eq!(deque.back(), Some(&(4, 50)));
+    }
+
+    #[test]
+    fn test_extend_with_zip_iterator() {
+        // zip() has upper bound based on shorter iterator
+        let mut deque: Deque<(i32, char)> = Deque::new(3);
+        deque.extend([1, 2, 3, 4, 5].into_iter().zip(['a', 'b', 'c', 'd', 'e']));
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&(3, 'c')));
+        assert_eq!(deque.back(), Some(&(5, 'e')));
+    }
+
+    #[test]
+    fn test_extend_with_rev_iterator() {
+        // rev() preserves size_hint
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend([1, 2, 3, 4, 5].into_iter().rev());
+        // produces: 5, 4, 3, 2, 1
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&1));
+    }
+
+    #[test]
+    fn test_extend_with_peekable_iterator() {
+        // peekable() preserves size_hint
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend([1, 2, 3, 4, 5].into_iter().peekable());
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_with_take_while_iterator() {
+        // take_while() has unknown upper bound (returns None)
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((1..=10).take_while(|&x| x <= 6)); // 1, 2, 3, 4, 5, 6
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&4));
+        assert_eq!(deque.back(), Some(&6));
+    }
+
+    #[test]
+    fn test_extend_with_skip_while_iterator() {
+        // skip_while() has unknown upper bound
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((1..=10).skip_while(|&x| x < 5)); // 5, 6, 7, 8, 9, 10
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&8));
+        assert_eq!(deque.back(), Some(&10));
+    }
+
+    #[test]
+    fn test_extend_with_inspect_iterator() {
+        // inspect() preserves size_hint
+        let mut deque: Deque<i32> = Deque::new(3);
+        let mut seen = Vec::new();
+        deque.extend((1..=5).inspect(|&x| seen.push(x)));
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(seen, vec![1, 2, 3, 4, 5]); // all items were inspected
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_with_fuse_iterator() {
+        // fuse() preserves size_hint
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend([1, 2, 3, 4, 5].into_iter().fuse());
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_with_step_by_iterator() {
+        // step_by() has known upper bound
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend((0..=20).step_by(3)); // 0, 3, 6, 9, 12, 15, 18
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&12));
+        assert_eq!(deque.back(), Some(&18));
+    }
+
+    #[test]
+    #[allow(clippy::cloned_instead_of_copied)]
+    fn test_extend_with_cloned_iterator() {
+        // cloned() preserves size_hint
+        let mut deque: Deque<i32> = Deque::new(3);
+        let values = [1, 2, 3, 4, 5];
+        deque.extend(values.iter().cloned());
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_with_copied_iterator() {
+        // copied() preserves size_hint
+        let mut deque: Deque<i32> = Deque::new(3);
+        let values = [1, 2, 3, 4, 5];
+        deque.extend(values.iter().copied());
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&3));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_multiple_times_respects_maxlen() {
+        let mut deque: Deque<i32> = Deque::new(5);
+        deque.extend([1, 2, 3]);
+        deque.extend([4, 5, 6]);
+        deque.extend([7, 8]);
+
+        assert_eq!(deque.len(), 5);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&4));
+        assert_eq!(deque.back(), Some(&8));
+    }
+
+    #[test]
+    #[allow(clippy::manual_repeat_n)]
+    fn test_extend_with_repeat_take_iterator() {
+        // repeat().take() - repeat has no bound, take limits it
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.extend(std::iter::repeat(42).take(10));
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&42));
+        assert_eq!(deque.back(), Some(&42));
+    }
+
+    #[test]
+    fn test_extend_with_once_iterator() {
+        // once() has exact size hint (1, Some(1))
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(1);
+        deque.push_back(2);
+        deque.extend(std::iter::once(3));
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&1));
+        assert_eq!(deque.back(), Some(&3));
+    }
+
+    #[test]
+    fn test_extend_with_empty_iterator_type() {
+        // empty() has exact size hint (0, Some(0))
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.push_back(1);
+        deque.extend(std::iter::empty::<i32>());
+
+        assert_eq!(deque.len(), 1);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&1));
+    }
+
+    #[test]
+    fn test_extend_references_with_filter() {
+        let mut deque: Deque<i32> = Deque::new(3);
+        let values: Vec<i32> = (1..=10).collect();
+        deque.extend(values.iter().filter(|&&x| x % 2 == 0)); // 2, 4, 6, 8, 10
+
+        assert_eq!(deque.len(), 3);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&6));
+        assert_eq!(deque.back(), Some(&10));
+    }
+
+    #[test]
+    fn test_extend_maxlen_one() {
+        // Edge case: maxlen of 1
+        let mut deque: Deque<i32> = Deque::new(1);
+        deque.extend([1, 2, 3, 4, 5]);
+
+        assert_eq!(deque.len(), 1);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&5));
+        assert_eq!(deque.back(), Some(&5));
+    }
+
+    #[test]
+    fn test_extend_large_iterator() {
+        // Large iterator to stress test
+        let mut deque: Deque<i32> = Deque::new(10);
+        deque.extend(0..10000);
+
+        assert_eq!(deque.len(), 10);
+        assert!(deque.len() <= deque.maxlen());
+        assert_eq!(deque.front(), Some(&9990));
+        assert_eq!(deque.back(), Some(&9999));
     }
 }
 
