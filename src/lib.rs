@@ -1003,12 +1003,16 @@ impl<T> Deque<T> {
 
     /// Inserts an element at the given index, shifting all elements after it to the right.
     ///
+    /// The valid index range is `0..len()` when the deque is full,
+    /// or `0..=len()` when not full.
+    /// In either case, `index` must be less than `maxlen`.
+    ///
     /// If the deque is full, the last (back) element is dropped to make room for the
     /// new element, and the dropped element is returned. Otherwise, `None` is returned.
     ///
     /// # Panics
     ///
-    /// Panics if `index > len()`.
+    /// Panics if `index >= maxlen`, or if `index > len()`.
     ///
     /// # Examples
     ///
@@ -1033,6 +1037,12 @@ impl<T> Deque<T> {
     /// assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 10, 2]);
     /// ```
     pub fn insert(&mut self, index: usize, value: T) -> Option<T> {
+        assert!(
+            index < self.maxlen,
+            "index out of bounds: the maxlen is {} but the index is {}",
+            self.maxlen,
+            index
+        );
         if self.deque.len() == self.maxlen {
             // If at max capacity, pop the back element before inserting
             let popped = self.deque.pop_back();
@@ -1716,7 +1726,8 @@ mod extend_tests {
     fn test_extend_with_filter_iterator() {
         // filter() has unknown upper bound (size_hint returns (0, None) for upper)
         let mut deque: Deque<i32> = Deque::new(3);
-        deque.extend((1..=10).filter(|x| x % 2 == 0)); // 2, 4, 6, 8, 10
+        // 2, 4, 6, 8, 10
+        deque.extend((1..=10).filter(|x| x % 2 == 0));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -1728,7 +1739,8 @@ mod extend_tests {
     fn test_extend_with_take_iterator() {
         // take() has known upper bound
         let mut deque: Deque<i32> = Deque::new(3);
-        deque.extend((1..=100).take(5)); // 1, 2, 3, 4, 5
+        // 1, 2, 3, 4, 5
+        deque.extend((1..=100).take(5));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -1740,7 +1752,8 @@ mod extend_tests {
     fn test_extend_with_skip_iterator() {
         // skip() preserves size_hint from inner iterator
         let mut deque: Deque<i32> = Deque::new(3);
-        deque.extend((1..=10).skip(5)); // 6, 7, 8, 9, 10
+        // 6, 7, 8, 9, 10
+        deque.extend((1..=10).skip(5));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -1839,7 +1852,8 @@ mod extend_tests {
     fn test_extend_with_take_while_iterator() {
         // take_while() has unknown upper bound (returns None)
         let mut deque: Deque<i32> = Deque::new(3);
-        deque.extend((1..=10).take_while(|&x| x <= 6)); // 1, 2, 3, 4, 5, 6
+        // 1, 2, 3, 4, 5, 6
+        deque.extend((1..=10).take_while(|&x| x <= 6));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -1851,7 +1865,8 @@ mod extend_tests {
     fn test_extend_with_skip_while_iterator() {
         // skip_while() has unknown upper bound
         let mut deque: Deque<i32> = Deque::new(3);
-        deque.extend((1..=10).skip_while(|&x| x < 5)); // 5, 6, 7, 8, 9, 10
+        // 5, 6, 7, 8, 9, 10
+        deque.extend((1..=10).skip_while(|&x| x < 5));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -1868,7 +1883,8 @@ mod extend_tests {
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
-        assert_eq!(seen, vec![1, 2, 3, 4, 5]); // all items were inspected
+        // All items were inspected
+        assert_eq!(seen, vec![1, 2, 3, 4, 5]);
         assert_eq!(deque.front(), Some(&3));
         assert_eq!(deque.back(), Some(&5));
     }
@@ -1889,7 +1905,8 @@ mod extend_tests {
     fn test_extend_with_step_by_iterator() {
         // step_by() has known upper bound
         let mut deque: Deque<i32> = Deque::new(3);
-        deque.extend((0..=20).step_by(3)); // 0, 3, 6, 9, 12, 15, 18
+        // 0, 3, 6, 9, 12, 15, 18
+        deque.extend((0..=20).step_by(3));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -1980,7 +1997,8 @@ mod extend_tests {
     fn test_extend_references_with_filter() {
         let mut deque: Deque<i32> = Deque::new(3);
         let values: Vec<i32> = (1..=10).collect();
-        deque.extend(values.iter().filter(|&&x| x % 2 == 0)); // 2, 4, 6, 8, 10
+        // 2, 4, 6, 8, 10
+        deque.extend(values.iter().filter(|&&x| x % 2 == 0));
 
         assert_eq!(deque.len(), 3);
         assert!(deque.len() <= deque.maxlen());
@@ -2045,7 +2063,8 @@ mod is_full_tests {
         let mut deque: Deque<i32> = Deque::new(2);
         deque.push_back(1);
         deque.push_back(2);
-        deque.push_back(3); // Overflow
+        // Overflow
+        deque.push_back(3);
         assert!(deque.is_full());
     }
 
@@ -2546,7 +2565,8 @@ mod as_mut_slices_tests {
         }
         // All elements should be doubled
         let sum: i32 = deque.iter().sum();
-        assert_eq!(sum, 12); // (1+2+3)*2 = 12
+        // (1+2+3)*2 = 12
+        assert_eq!(sum, 12);
     }
 }
 
@@ -2723,7 +2743,8 @@ mod integration_tests {
         deque.rotate_left(2);
         // The deque is now [3, 4, 5, 1, 2] which is not sorted
         // binary_search on unsorted data gives undefined but safe results
-        let _ = deque.binary_search(&3); // May not find it correctly
+        // May not find it correctly
+        let _ = deque.binary_search(&3);
     }
 
     #[test]
@@ -2846,7 +2867,8 @@ mod index_tests {
     #[test]
     fn test_index_range_invalid_range() {
         let deque: Deque<i32> = (vec![1, 2, 3, 4, 5], 10).into();
-        assert_eq!(deque.index_range(&2, 5, 3), None); // start > end
+        // start > end
+        assert_eq!(deque.index_range(&2, 5, 3), None);
     }
 
     #[test]
@@ -2944,7 +2966,8 @@ mod reverse_tests {
     #[test]
     fn test_reverse_empty() {
         let mut deque: Deque<i32> = Deque::new(10);
-        deque.reverse(); // Should not panic
+        // Should not panic
+        deque.reverse();
         assert!(deque.is_empty());
     }
 
@@ -2978,7 +3001,8 @@ mod remove_first_tests {
         assert_eq!(deque.len(), 4);
         assert_eq!(deque.get(0), Some(&1));
         assert_eq!(deque.get(1), Some(&3));
-        assert_eq!(deque.get(2), Some(&2)); // Second 2 still there
+        // Second 2 still there
+        assert_eq!(deque.get(2), Some(&2));
         assert_eq!(deque.get(3), Some(&4));
     }
 
@@ -3070,7 +3094,8 @@ mod insert_tests {
     fn test_insert_full_deque_drops_back() {
         let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
         let dropped = deque.insert(1, 10);
-        assert_eq!(dropped, Some(3)); // 3 was at the back and got dropped
+        // 3 was at the back and got dropped
+        assert_eq!(dropped, Some(3));
         assert_eq!(deque.len(), 3);
         assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 10, 2]);
     }
@@ -3084,14 +3109,22 @@ mod insert_tests {
     }
 
     #[test]
-    fn test_insert_full_deque_at_back() {
-        // Inserting at the back of a full deque: we pop_back first, then insert.
-        // So [1,2,3] -> pop_back -> [1,2] (len=2) -> insert(2, 10) -> [1,2,10]
-        // Note: after popping, len is 2, so we can only insert at index 0, 1, or 2
+    fn test_insert_full_deque_at_last_valid_index() {
+        // For a full deque of len=3, valid indices are 0, 1, 2 (index < len)
+        // Inserting at index 2 (last valid): [1,2,3] -> pop_back -> [1,2] -> insert(2, 10) -> [1,2,10]
         let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
-        let dropped = deque.insert(2, 10); // Insert at the new back position
+        let dropped = deque.insert(2, 10);
         assert_eq!(dropped, Some(3));
         assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 2, 10]);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_full_deque_at_len_panics() {
+        // For a full deque, index == len() should panic
+        let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
+        // index == len(), should panic
+        deque.insert(3, 10);
     }
 
     #[test]
@@ -3102,12 +3135,170 @@ mod insert_tests {
     }
 
     #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_non_full_index_at_maxlen_panics() {
+        // Non-full deque, index == maxlen should panic
+        let mut deque: Deque<i32> = (vec![1, 2], 5).into();
+        // index == maxlen, invalid
+        deque.insert(5, 10);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_non_full_index_beyond_maxlen_panics() {
+        // Non-full deque, index > maxlen should panic
+        let mut deque: Deque<i32> = (vec![1, 2], 5).into();
+        // index > maxlen, invalid
+        deque.insert(10, 10);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_empty_deque_index_at_maxlen_panics() {
+        // Empty deque, index == maxlen should panic
+        let mut deque: Deque<i32> = Deque::new(5);
+        // index == maxlen, invalid
+        deque.insert(5, 10);
+    }
+
+    #[test]
     fn test_insert_fills_to_maxlen() {
-        let mut deque: Deque<i32> = (vec![1, 2, 4], 4).into();
-        assert_eq!(deque.insert(2, 3), None);
-        assert_eq!(deque.len(), 4);
+        let mut deque: Deque<i32> = Deque::new(3);
+        deque.insert(0, 1);
+        deque.insert(1, 2);
+        deque.insert(2, 3);
+        assert_eq!(deque.len(), 3);
         assert!(deque.is_full());
-        assert_eq!(deque.get(2), Some(&3));
+    }
+
+    #[test]
+    fn test_insert_full_deque_size_1_index_0() {
+        // Size 1, full deque [1], insert at index 0
+        let mut deque: Deque<i32> = (vec![1], 1).into();
+        let dropped = deque.insert(0, 10);
+        assert_eq!(dropped, Some(1));
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![10]);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_full_deque_size_1_index_1_panics() {
+        // Size 1, full deque [1], insert at index 1 (== len()) should panic
+        let mut deque: Deque<i32> = (vec![1], 1).into();
+        deque.insert(1, 10);
+    }
+
+    #[test]
+    fn test_insert_full_deque_size_2_all_valid_indices() {
+        // Size 2, full deque [1, 2], valid indices are 0, 1
+
+        // Insert at index 0
+        let mut deque: Deque<i32> = (vec![1, 2], 2).into();
+        let dropped = deque.insert(0, 10);
+        assert_eq!(dropped, Some(2));
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![10, 1]);
+
+        // Insert at index 1
+        let mut deque: Deque<i32> = (vec![1, 2], 2).into();
+        let dropped = deque.insert(1, 10);
+        assert_eq!(dropped, Some(2));
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 10]);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_full_deque_size_2_index_2_panics() {
+        let mut deque: Deque<i32> = (vec![1, 2], 2).into();
+        deque.insert(2, 10);
+    }
+
+    #[test]
+    fn test_insert_full_deque_size_3_all_valid_indices() {
+        // Size 3, full deque [1, 2, 3], valid indices are 0, 1, 2
+
+        // Insert at index 0
+        let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
+        let dropped = deque.insert(0, 10);
+        assert_eq!(dropped, Some(3));
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![10, 1, 2]);
+
+        // Insert at index 1
+        let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
+        let dropped = deque.insert(1, 10);
+        assert_eq!(dropped, Some(3));
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 10, 2]);
+
+        // Insert at index 2
+        let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
+        let dropped = deque.insert(2, 10);
+        assert_eq!(dropped, Some(3));
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 2, 10]);
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_full_deque_size_3_index_3_panics() {
+        let mut deque: Deque<i32> = (vec![1, 2, 3], 3).into();
+        deque.insert(3, 10);
+    }
+
+    #[test]
+    fn test_insert_full_deque_size_8_all_valid_indices() {
+        // Size 8, full deque, valid indices are 0..7 (0 to maxlen-1)
+        let values: Vec<i32> = (1..=8).collect();
+
+        for idx in 0..8 {
+            let mut deque: Deque<i32> = (values.clone(), 8).into();
+            let dropped = deque.insert(idx, 100);
+            assert_eq!(dropped, Some(8), "Failed at index {idx}");
+            assert_eq!(deque.len(), 8, "Failed at index {idx}");
+
+            // Verify the structure: element 100 should be at position idx
+            // Elements before idx should be 1..=idx
+            // Elements after idx should be (idx+1)..=7 (original elements shifted)
+            let result: Vec<i32> = deque.iter().copied().collect();
+            assert_eq!(
+                result[idx], 100,
+                "Failed at index {idx}: expected 100 at position {idx}"
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "out of bounds")]
+    fn test_insert_full_deque_size_8_index_8_panics() {
+        // Size 8, full deque, index 8 (== len()) should panic
+        let values: Vec<i32> = (1..=8).collect();
+        let mut deque: Deque<i32> = (values, 8).into();
+        deque.insert(8, 100);
+    }
+
+    #[test]
+    fn test_insert_non_full_deque_at_len_is_valid() {
+        // When not full, index == len() is valid (appends to end)
+        let mut deque: Deque<i32> = (vec![1, 2, 3], 5).into();
+        // index == len(), should work
+        let dropped = deque.insert(3, 4);
+        assert_eq!(dropped, None);
+        assert_eq!(deque.iter().copied().collect::<Vec<_>>(), vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_insert_non_full_deque_all_indices() {
+        // Non-full deque [1, 2, 3] with maxlen=5, valid indices are 0, 1, 2, 3
+
+        for idx in 0..=3 {
+            let mut deque: Deque<i32> = (vec![1, 2, 3], 5).into();
+            let dropped = deque.insert(idx, 10);
+            assert_eq!(dropped, None, "Failed at index {idx}");
+            assert_eq!(deque.len(), 4, "Failed at index {idx}");
+
+            let result: Vec<i32> = deque.iter().copied().collect();
+            assert_eq!(
+                result[idx], 10,
+                "Failed at index {idx}: expected 10 at position {idx}"
+            );
+        }
     }
 }
 
